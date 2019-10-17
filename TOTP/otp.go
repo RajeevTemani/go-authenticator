@@ -5,10 +5,10 @@ import (
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha1"
-	"encoding/base32"
+	"encoding/base64"
 	"encoding/binary"
+	"log"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -16,7 +16,7 @@ import (
 // GenerateServerOTP takes secretToken as input and uses time to generate
 // authentication token(TOTP) based on HOTP(HMAC-based One Time Password)
 // It generates token for last , current and next time slot.
-func GenerateServerOTP(secretToken string) []string {
+func GenerateServerOTP(secretToken []byte) []string {
 
 	//The TOTP token is just a HOTP token seeded with every 30 seconds.
 	interval := time.Now().Unix()
@@ -34,7 +34,7 @@ func GenerateServerOTP(secretToken string) []string {
 
 // GenerateUserOTP creates a single OTP for the user
 // and uses current time stamp for creation.
-func GenerateUserOTP(secretToken string) string {
+func GenerateUserOTP(secretToken []byte) string {
 	interval := time.Now().Unix()
 	interval /= 30
 
@@ -45,15 +45,12 @@ func GenerateUserOTP(secretToken string) string {
 
 // HOTP - HMAC-based One Time Password
 // HMAC-SHA1 and MD5 is a hashing algorithm
-func generateHOTP(secretToken string, interval int64) string {
+func generateHOTP(secretToken []byte, interval int64) string {
 	// convert secretToken to base-32 encoding.
 	// Base32 encoding desires a 32-character
 	// subset of the twenty-six letters A–Z.
-	secretToken = strings.ToUpper(secretToken)
-	key, err := base32.StdEncoding.DecodeString(secretToken)
-	if err != nil {
-		panic(err)
-	}
+	k := base64.StdEncoding.EncodeToString(secretToken)
+	key := []byte(k)
 
 	bs := make([]byte, 8, 8)
 	binary.BigEndian.PutUint64(bs, uint64(interval))
@@ -73,9 +70,9 @@ func generateHOTP(secretToken string, interval int64) string {
 	var header uint32
 	//Get 32 bit chunk from hash starting at the o
 	r := bytes.NewReader(md5[o : o+4])
-	err = binary.Read(r, binary.BigEndian, &header)
+	err := binary.Read(r, binary.BigEndian, &header)
 	if err != nil {
-		panic(err)
+		log.Println(err)
 	}
 
 	//Ignore most significant bits as per RFC 4226.
