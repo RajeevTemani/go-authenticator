@@ -38,7 +38,7 @@ func secureRandomBytes(length int) []byte {
 	var randomBytes = make([]byte, length)
 	_, err := rand.Read(randomBytes)
 	if err != nil {
-		log.Fatal("Unable to generate random bytes")
+		log.Println("Unable to generate random bytes")
 	}
 	return randomBytes
 }
